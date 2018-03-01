@@ -1,3 +1,5 @@
+# FELIPE ROCHA CAMPOS (3032752530) && DREW KAUL (3032680315)
+
 # Attack the Auction
 Welcome to lab03. In this assignment you'll be getting acclimated with external calls, inheritance, and smart contract security.
 

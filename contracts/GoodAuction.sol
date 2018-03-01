@@ -8,21 +8,20 @@ contract GoodAuction is AuctionInterface {
 	/* New data structure, keeps track of refunds owed */
 	mapping(address => uint) refunds;
 
-
 	/* 	Bid function, now shifted to pull paradigm
 		Must return true on successful send and/or bid, bidder
 		reassignment. Must return false on failure and
 		allow people to retrieve their funds  */
 	function bid() payable external returns(bool) {
 		if (msg.value > highestBid) {
-				highestBidder.send(highestBid);
-				highest = msg.sender;
+				refunds[highestBidder] = highestBid;
+				highestBidder = msg.sender;
 				highestBid = msg.value;
 				return true;
-		} else {
-				revert();
-				return false;
 		}
+
+		refunds[msg.sender] = msg.value;
+		return false;
 	}
 
 	/*  Implement withdraw function to complete new
@@ -30,7 +29,7 @@ contract GoodAuction is AuctionInterface {
 	    return of owed funds and false on failure
 	    or no funds owed.  */
 	function withdrawRefund() external returns(bool) {
-		if (refunds[msg.sender] <= 0 || !msg.sender.send(refunds[msg.sender])) {
+		if (refunds[msg.sender] == 0 || !msg.sender.send(refunds[msg.sender])) {
 			return false;
 		}
 
@@ -46,27 +45,20 @@ contract GoodAuction is AuctionInterface {
 	}
 
 
-	/* 	Consider implementing this modifier
-		and applying it to the reduceBid function
-		you fill in below. */
-	modifier canReduce() {
-		require(msg.sender == highestBidder);
-		_;
-	}
-
-
 	/*  Rewrite reduceBid from BadAuction to fix
 		the security vulnerabilities. Should allow the
 		current highest bidder only to reduce their bid amount */
-	function reduceBid() external canReduce() {
+	function reduceBid() external {
+		if (msg.sender != highestBidder) {
+			return;
+		}
 		if (highestBid > 0) {
-				highestBid = highestBid - 1;
-				require(highestBidder.send(1));
-		} else {
-				revert();
+				highestBid -= 1;
+				if(!highestBidder.send(1)) {
+					highestBid += 1;
+				}
 		}
 	}
-
 
 	/* 	Remember this fallback function
 		gets invoked if somebody calls a

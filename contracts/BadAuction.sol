@@ -13,18 +13,15 @@ contract BadAuction is AuctionInterface {
 	 * their funds back
 	 */
 	function bid() payable external returns (bool) {
-		var poisoned = getTarget() == highestBidder;
-		if (!poisoned && msg.value > highestBid) {
-				highestBidder.send(highestBid);
-				highest = msg.sender;
+		if (msg.value > highestBid && highestBidder.send(highestBid)) {
+				highestBidder = msg.sender;
 				highestBid = msg.value;
 				return true;
-		} else {
-				revert();
-				return false;
 		}
-	}
 
+		msg.sender.send(msg.value);
+		return false;
+	}
 
 	/* 	Reduce bid function. Vulnerable to attack.
 		Allows current highest bidder to reduce
@@ -34,10 +31,10 @@ contract BadAuction is AuctionInterface {
 
 	function reduceBid() external {
 	    if (highestBid >= 0) {
-	        highestBid = highestBid - 1;
-	        require(highestBidder.send(1));
-	    } else {
-	    	revert();
+	        highestBid -= 1;
+	        if (!highestBidder.send(1)) {
+						highestBid += 1;
+					}
 	    }
 	}
 
